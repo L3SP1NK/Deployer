@@ -1,0 +1,291 @@
+#!/bin/bash
+
+RC='\e[0m'
+RED='\e[31m'
+YELLOW='\e[33m'
+GREEN='\e[32m'
+
+CWD=$(pwd)
+GITHUB_URL='https://github.com'
+TERMINAL='xterm' ## Terminal emulator to install.
+#FONTS_PKG='fonts-jetbrains-mono fonts-noto-color-emoji'
+DWM_PKG="libc6 libfontconfig1 libx11-6 libxft2 libxinerama1 libxft-dev libxinerama-dev libx11-dev xinit lxappearance"
+X_PKG="mpv ${TERMINAL} ${PKG_FONTS} ${DWM_PKG}"
+B_PKG="sudo git curl wget nmap htop neofetch yt-dlp make cmake g++ rsync bash-completion command-not-found x11-xserver-utils"
+
+checkRoot(){
+    if [[ ${EUID} -ne '0' ]];then
+        echo -e "${RED}Run me as root!${RC}"
+        exit 1
+    fi
+}
+
+genSrc(){
+    echo -e "${YELLOW}Generating sources.list...${RC}"
+    BRANCH='stable'
+    if ! echo -e "
+deb http://deb.debian.org/debian ${BRANCH} main contrib non-free
+deb-src http://deb.debian.org/debian ${BRANCH} main contrib non-free\n
+deb http://deb.debian.org/debian ${BRANCH}-updates main contrib non-free
+deb-src http://deb.debian.org/debian ${BRANCH}-updates main contrib non-free\n
+deb http://deb.debian.org/debian-security/ ${BRANCH}-security main contrib non-free
+deb-src http://deb.debian.org/debian-security/ ${BRANCH}-security main contrib non-free\n
+deb http://deb.debian.org/debian ${BRANCH}-backports main contrib non-free
+deb-src http://deb.debian.org/debian ${BRANCH}-backports main contrib non-free\n
+" > /etc/apt/sources.list;then
+        echo -e "${RED}Can't write to sources.list!${RC}"
+        exit 1
+    fi
+}
+
+updateApt(){
+    echo -e "${YELLOW}Updating APT packages...${RC}"
+    apt-get -fyq install
+    dpkg --configure -a
+    apt-get update --list-cleanup
+    apt-get -fyq upgrade
+    apt-get -fyq dist-upgrade
+    apt-get -fyq full-upgrade
+    apt-get -fyq install
+    dpkg --configure -a
+    apt-get -y clean
+    apt-get -y autoclean
+    apt-get -y autoremove --purge
+}
+
+installBpkg(){
+    echo -e "${YELLOW}Installing packages selection...${RC}"
+    apt-get install -fy ${B_PKG}
+}
+
+installXpkg(){
+    echo -e "${YELLOW}Installing packages selection...${RC}"
+    apt-get install -fy ${X_PKG}
+}
+
+installSuckless(){
+    echo -e "${YELLOW}Installing suckless tools...${RC}"
+    GITHUB_USER='L3SP1NK'
+    MYGIT='/opt/mygit/suckless'
+
+    if [[ -d ${MYGIT} ]];then
+        echo -e "${RED}${MYGIT} already exist!${RC}"
+#        exit 1
+    fi
+    mkdir -p ${MYGIT}
+
+    SL_[1]="${GITHUB_URL}/${GITHUB_USER}/dwm"
+    SL_[2]="${GITHUB_URL}/${GITHUB_USER}/slstatus"
+    SL_[3]="${GITHUB_URL}/${GITHUB_USER}/tabbed"
+
+    echo -e "${YELLOW}Cloning dwm repos...${RC}"
+    for REPO in ${SL_[@]};do
+        cd ${MYGIT}||exit 1
+        REPO_NAME=$(echo -e ${REPO}|cut -d '/' -f5)
+        if [[ -d ${REPO_NAME} ]];then
+            echo -e "${RED}${REPO_NAME} already exist!${RC}"
+#            exit 1
+        fi
+        git clone ${REPO}
+        cd ${REPO_NAME}||exit 1
+
+        if make;then
+            if make clean install;then
+                echo -e "${GREEN}Compilation finished successfully!${RC}"
+            else
+                echo -e "${RED}Compilation failed!${RC}"
+                exit 1
+            fi
+        else
+            echo -e "${RED}Compilation failed!${RC}"
+            exit 1
+        fi
+    done
+}
+
+installBtop(){
+    DIR='/opt'
+    GITHUB_USER="aristocratos"
+    echo -e "${YELLOW}Installing Btop...${RC}"
+    REPO="${GITHUB_URL}/${GITHUB_USER}/btop"
+    REPO_NAME=$(echo -e ${REPO}|cut -d '/' -f5)
+    if [[ -d ${REPO_NAME} ]];then
+        echo -e "${RED}${REPO_NAME}already exist!${RC}"
+#        exit 1
+    fi
+
+    cd ${DIR}||exit 1
+    if [[ ! -w ${DIR} ]];then
+        echo -e "${RED}Can't write to ${DIR}"
+        exit 1
+    fi
+    mkdir -p ${DIR}
+    cd ${DIR}||exit 1
+
+    echo -e "${YELLOW}Cloning ${REPO_NAME}...${RC}"
+    git clone ${REPO}
+    cd ${REPO_NAME}||exit 1
+
+    if make;then
+        if make clean install;then
+            echo -e "${GREEN}Compilation finished successfully!${RC}"
+        else
+            echo -e "${RED}Compilation failed!${RC}"
+            exit 1
+        fi
+    else
+        echo -e "${RED}Compilation failed!${RC}"
+        exit 1
+    fi
+}
+
+
+setupConfig(){
+    echo -e "${YELLOW}Setting up personal config files...${RC}"
+    GITHUB_USER='L3SP1NK'
+    REPO="${GITHUB_URL}/${GITHUB_USER}/Configs"
+    REPO_NAME=$(echo -e ${REPO}|cut -d '/' -f5)
+    MYGIT='/opt/mygit'
+
+    mkdir -p ${MYGIT}
+    cd ${MYGIT}||exit 1
+
+    if [[ -d ${REPO_NAME} ]];then
+        echo -e "${RED}${REPO_NAME}already exist!${RC}"
+#        exit 1
+    fi
+
+    echo -e "${YELLOW}Cloning ${REPO_NAME}...${RC}"
+    git clone ${REPO}
+
+    echo -e "${YELLOW}Enter the normal user name:${RC}"
+    read USER_NAME
+    if ! groups ${USER_NAME};then
+        echo -e "${RED}${USER_NAME} dosen't exist!${RC}"
+        exit 1
+    fi
+
+    ln -svf /dev/null ${HOME}/.bash_history
+    ln -svf /dev/null ${HOME}/.zsh_history
+
+    echo -e "${YELLOW}Disabling history:${RC}"
+    if [[ -d /home/${USER_NAME} ]];then
+        ln -svf /dev/null /home/${USER_NAME}/.bash_history
+        ln -svf /dev/null /home/${USER_NAME}/.zsh_history
+    fi
+
+    echo -e "${YELLOW}Linking dot-files:${RC}"
+    [[ -d ${MYGIT}/Configs/dot-files/ ]]&&ln -svf ${MYGIT}/Configs/dot-files/.* /home/${USER_NAME}
+    [[ -d ${MYGIT}/Configs/dot-files/ ]]&&ln -svf ${MYGIT}/Configs/dot-files/.* ${HOME}
+
+    mkdir -p /home/${USER_NAME}/.config/
+
+    echo -e "${YELLOW}Linking rofi config:${RC}"
+    [[ -d ${MYGIT}/Configs/rofi && -d /home/${USER_NAME}/.config/ ]]&&ln -svf ${MYGIT}/Configs/rofi /home/${USER_NAME}/.config/
+
+    echo -e "${YELLOW}Linking GTK config:${RC}"
+    [[ -f ${MYGIT}/Configs/gtk.css && -f /home/${USER_NAME}/.config/gtk-3.0/gtk.css ]]&&ln -svf ${MYGIT}/Configs/gtk.css /home/${USER_NAME}/.config/gtk-3.0/gtk.css
+}
+
+installDocker(){
+    echo -e "${YELLOW}Installing docker...${RC}"
+    echo -e "${YELLOW}Removing older Docker version...${RC}"
+    ## For more info, see:
+    ## https://docs.docker.com/engine/install/debian/
+    apt-get purge --autoremove -f -y docker docker-engine docker.io containerd runc
+    ## It’s OK if apt-get reports that none of these packages are installed.
+
+    ## Before you install Docker Engine for the first time on a new host machine, you need to set up the Docker repository.
+    ## Afterward, you can install and update Docker from the repository.
+    ## Raspbian users cannot use this method!
+    ## For Raspbian, installing using the repository is not yet supported. You must instead use the convenience script.
+    ## Set up the repository:
+    ## Update the apt package index and install packages to allow apt to use a repository over HTTPS:
+    PKG_NEEDED="ca-certificates curl gnupg lsb-release"
+    apt-get update
+    apt-get install -f -y ${PKG_NEEDED}
+
+    ## Add Docker’s official GPG key:
+    echo -e "${YELLOW}Getting the Docker key...${RC}"
+    mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/debian/gpg|gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+    ## Use the following command to set up the repository:
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable"|tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    ## Install Docker Engine:
+    ## This procedure works for Debian on x86_64 / amd64, armhf, arm64, and Raspbian.
+    ## Update the apt package index, and install the latest version of Docker Engine, containerd, and Docker Compose, or go to the next step to install a specific version:
+    echo -e "${YELLOW}Installing Docker...${RC}"
+    apt-get update
+    apt-get install -f -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+    ## Verify that Docker Engine is installed correctly by running the hello-world image.
+    systemctl enable --now docker
+    if docker run hello-world;then
+        echo -e "${GREEN}Installation completed successfully!${RC}"
+    else
+        echo -e "${RED}Installation failed!${RC}"
+        exit 1
+    fi
+}
+
+installLibVirt(){
+    PKG="qemu-kvm libvirt-daemon-system libvirt-clients virt-manager gir1.2-spiceclientgtk-3.0 dnsmasq qemu-utils"
+    apt install --no-install-recommends -fyq ${PKG}
+    usermod -aG libvirt ${USER_NAME}
+    usermod -aG kvm ${USER_NAME}
+}
+
+installVeraNfs(){
+    NFS_PKG='nfs-common nfs-kernel-server'
+    apt-get install -fyq ${NFS_PKG}
+
+
+    VERACRYPT_DEB11_GUI_URL='https://launchpad.net/veracrypt/trunk/1.25.9/+download/veracrypt-1.25.9-Debian-11-amd64.deb'
+    VERACRYPT_DEB11_CLI_URL='https://launchpad.net/veracrypt/trunk/1.25.9/+download/veracrypt-console-1.25.9-Debian-11-amd64.deb'
+    VERACRYPT_GEN_INSTALLER='https://launchpad.net/veracrypt/trunk/1.25.9/+download/veracrypt-1.25.9-setup.tar.bz2'
+
+    TO_INSTALL=${VERACRYPT_DEB11_GUI_URL}
+
+    cd /tmp||exit 1
+    wget ${TO_INSTALL}
+    PKG_NAME=$(echo ${TO_INSTALL}| cut -d "/" -f 8)
+    dpkg -i ${PKG_NAME}
+    cd ${CWD}
+}
+
+main(){
+    checkRoot
+    #genSrc
+    #updateApt
+    installBpkg
+    installXpkg
+    #installSuckless
+    #installBtop
+    #installDocker
+    installLibVirt
+    #installVeraNfs
+    #setupConfig
+}
+
+if main;then
+    echo -e "${GREEN}Installation and setup completed successfully!${RC}"
+    read -n1 -p -s REBOOT_NOW
+    case ${REBOOT_NOW} in
+        y|Y)
+            reboot -i
+            ;;
+        n|N)
+            exit
+            ;;
+        *)
+            exit 1
+            ;;
+    esac
+else
+    echo -e "${RED}Something went wrong!${RC}"
+    exit 1
+fi
