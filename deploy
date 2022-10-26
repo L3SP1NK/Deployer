@@ -1,5 +1,8 @@
 #!/bin/bash
 
+## Deploy/install/configure multiple suite of software.
+
+
 RC='\e[0m'
 RED='\e[31m'
 YELLOW='\e[33m'
@@ -10,8 +13,9 @@ GITHUB_URL='https://github.com'
 TERMINAL='xterm' ## Terminal emulator to install.
 #FONTS_PKG='fonts-jetbrains-mono fonts-noto-color-emoji'
 DWM_PKG="libc6 libfontconfig1 libx11-6 libxft2 libxinerama1 libxft-dev libxinerama-dev libx11-dev xinit lxappearance"
-X_PKG="mpv ${TERMINAL} ${PKG_FONTS} ${DWM_PKG}"
-B_PKG="sudo git curl wget nmap htop neofetch yt-dlp make cmake g++ rsync bash-completion command-not-found x11-xserver-utils"
+PLAYER='mpv'
+X_PKG="${PLAYER} ${TERMINAL} ${PKG_FONTS} ${DWM_PKG}"
+B_PKG="sudo git curl wget nmap htop neofetch yt-dlp make cmake g++ rsync bash-completion command-not-found x11-xserver-utils apt-utils"
 
 checkRoot(){
     if [[ ${EUID} -ne '0' ]];then
@@ -116,7 +120,7 @@ installBtop(){
 
     cd ${DIR}||exit 1
     if [[ ! -w ${DIR} ]];then
-        echo -e "${RED}Can't write to ${DIR}"
+        echo -e "${RED}Can't write to ${DIR}${RC}"
         exit 1
     fi
     mkdir -p ${DIR}
@@ -257,6 +261,58 @@ installVeraNfs(){
     cd ${CWD}
 }
 
+installMetasploit(){
+    INSTALL_DIR='/tmp'
+    INSTALLER_URL='https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb'
+    INSTALLER='${INSTALL_DIR}/msfinstall'
+
+    cd ${INSTALL_DIR}||exit 1
+    if ! curl -s ${INSTALLER_URL}>${INSTALLER};then
+        echo -e "${RED}Can't write to ${INSTALL_DIR}${RC}"
+        exit 1
+    fi
+
+    chmod 755 ${INSTALLER}
+    ${INSTALLER}
+}
+
+installStreamSuite(){
+    PLAYER='mpv'
+    PKG="ffmpeg curl wget yt-dlp ${PLAYER}"
+    JELLYFIN_VERSION='10.8.5'
+    JELLYFIN_URL="https://repo.jellyfin.org/releases/server/linux/versions/stable/combined/10.8.5/jellyfin_${JELLYFIN_VERSION}_amd64.tar.gz"
+    ERSATZ_TV_URL='https://github.com/jasongdove/ErsatzTV/releases/download/v0.6.9-beta/ErsatzTV-v0.6.9-beta-linux-x64.tar.gz'
+
+    echo -e "${YELLOW}Installing dependencies...${RC}"
+    if ! apt-get install -fyq ${PKG};then
+        echo -e "${RED}Can't install ${PKG}${RC}"
+    fi
+
+    INSTALL_PATH='/opt'
+    cd /opt||exit 1
+    if [[ ! -w ${INSTALL_PATH} ]];then
+        echo -e "${RED}Can't write to ${INSTALL_PATH}${RC}"
+        exit 1
+    fi
+
+    curl -s ${JELLYFIN_URL} -o jellyfin.tar.gz
+    if tar xvf jellyfin.tar.gz;then
+        echo -e "${GREEN}Jellyfin path is ${INSTALL_PATH}${RC}"
+    else
+        echo -e "${RED}Something went wrong during Jellyfin installation!${RC}"
+        exit 1
+    fi
+
+    curl -s ${ERSATZ_TV_URL} -o ersatz_tv.tar.gz
+    if tar xvf ersatz_tv.tar.gz;then
+        echo -e "${GREEN}Ersatz TV path is ${INSTALL_PATH}${RC}"
+    else
+        echo -e "${RED}Something went wrong during Ersatz TV installation!${RC}"
+        exit 1
+    fi
+
+}
+
 main(){
     checkRoot
     #genSrc
@@ -268,6 +324,8 @@ main(){
     #installDocker
     installLibVirt
     #installVeraNfs
+    #installMetasploit
+    #installStreamSuite
     #setupConfig
 }
 

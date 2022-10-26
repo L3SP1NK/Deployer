@@ -1,2 +1,2 @@
 ## Deployer
-Deploy your stack on a fresh machine.
+Deploy your stack on a linux machine.
