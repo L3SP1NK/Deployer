@@ -15,7 +15,7 @@ TERMINAL='xterm' ## Terminal emulator to install.
 DWM_PKG="libc6 libfontconfig1 libx11-6 libxft2 libxinerama1 libxft-dev libxinerama-dev libx11-dev xinit lxappearance"
 PLAYER='mpv'
 X_PKG="${PLAYER} ${TERMINAL} ${PKG_FONTS} ${DWM_PKG}"
-B_PKG="sudo git curl wget nmap htop neofetch yt-dlp make cmake g++ rsync bash-completion command-not-found x11-xserver-utils apt-utils"
+B_PKG="sudo git curl wget nmap htop neofetch yt-dlp make cmake g++ rsync bash-completion command-not-found x11-xserver-utils apt-utils ccze"
 
 checkRoot(){
     if [[ ${EUID} -ne '0' ]];then
