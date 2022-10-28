@@ -12,10 +12,10 @@ CWD=$(pwd)
 GITHUB_URL='https://github.com'
 TERMINAL='xterm' ## Terminal emulator to install.
 #FONTS_PKG='fonts-jetbrains-mono fonts-noto-color-emoji'
-DWM_PKG="libc6 libfontconfig1 libx11-6 libxft2 libxinerama1 libxft-dev libxinerama-dev libx11-dev xinit lxappearance"
+DWM_PKG="libc6 libfontconfig1 libx11-6 libxft2 libxinerama1 libxft-dev libxinerama-dev libx11-dev xinit lxappearance x11-xserver-utils"
 PLAYER='mpv'
 X_PKG="${PLAYER} ${TERMINAL} ${PKG_FONTS} ${DWM_PKG}"
-B_PKG="sudo git curl wget nmap htop neofetch yt-dlp make cmake g++ rsync bash-completion command-not-found x11-xserver-utils apt-utils ccze"
+B_PKG="sudo git curl wget nmap htop neofetch yt-dlp make cmake g++ rsync bash-completion command-not-found apt-utils ccze zstd"
 
 checkRoot(){
     if [[ ${EUID} -ne '0' ]];then
