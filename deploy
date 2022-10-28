@@ -315,18 +315,18 @@ installStreamSuite(){
 
 main(){
     checkRoot
-    #genSrc
-    #updateApt
+    genSrc
+    updateApt
     installBpkg
-    installXpkg
+    #installXpkg
     #installSuckless
-    #installBtop
-    #installDocker
-    installLibVirt
+    installBtop
+    installDocker
+    #installLibVirt
     #installVeraNfs
     #installMetasploit
     #installStreamSuite
-    #setupConfig
+    setupConfig
 }
 
 if main;then
