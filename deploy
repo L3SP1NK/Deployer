@@ -320,13 +320,13 @@ main(){
     installBpkg
     #installXpkg
     #installSuckless
-    installBtop
-    installDocker
+    #installBtop
+    #installDocker
     #installLibVirt
     #installVeraNfs
     #installMetasploit
-    #installStreamSuite
-    setupConfig
+    installStreamSuite
+    #setupConfig
 }
 
 if main;then
