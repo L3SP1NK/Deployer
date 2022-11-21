@@ -315,9 +315,9 @@ installStreamSuite(){
 
 main(){
     checkRoot
-    genSrc
-    updateApt
-    installBpkg
+    #genSrc
+    #updateApt
+    #installBpkg
     #installXpkg
     #installSuckless
     #installBtop
